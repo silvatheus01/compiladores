@@ -4,13 +4,16 @@ L   [a-zA-Z]+
 ASS  '
 ASD  \"
 AS      ({ASS}|{ASD})
-_INT    [1-9]+[0-9]*
-_FLOAT   {_INT}("."{_INT})?([Ee]("+"|"-")?{_INT})?
+_INT    [1-9]+[0-9]*|0
+_FLOAT   {_INT}("."{_INT}*)?([Ee]("+"|"-")?{_INT})?
 _FOR    [Ff][Oo][Rr]
 _IF     [Ii][Ff]
-_COMENTARIO "/*"({L}|{E}|{_INT}|{_FLOAT}|\n)*"*/"
-_STRING     {ASD}({E}|{L}|\\\"|\"\"|" ")*{ASD}
-_ID     ({L}|{E})+({L}|{E}|{_INT}|{_FLOAT}|({AS}{_STRING}{AS})|{_COMENTARIO})*
+CHAR      ({L}|{_INT}|" "|{E}|"//"|\\|\/|"+")
+COMENTARIO_S    "//"{CHAR}*("*/")?
+COMENTARIO_C    "/*"({CHAR}|\n|"/ *")*"*/"
+_COMENTARIO ({COMENTARIO_C}|{COMENTARIO_S})
+_STRING     {ASD}({CHAR}|\\\"|("\"\""))*{ASD}
+_ID     ({L}|{E})({L}|{E}|{_FLOAT}|({AS}{_STRING}{AS})|{_COMENTARIO})*
 WS  [ \t\n]
 
 %%
