@@ -1,16 +1,16 @@
 /* Coloque aqui definições regulares */
-E   [$_]
-L   [a-zA-Z]
-ASS  [']
-ASD  ["]
-AS      [{ASS} | {ASD}]
+E   [$_]+
+L   [a-zA-Z]+
+ASS  '
+ASD  \"
+AS      ({ASS}|{ASD})
 _INT    [1-9]+[0-9]*
 _FLOAT   {_INT}("."{_INT})?([Ee]("+"|"-")?{_INT})?
 _FOR    [Ff][Oo][Rr]
 _IF     [Ii][Ff]
-_COMENTARIO ["/*" | "//"][.\n]*("*/")?
-_STRING     {ASD}[^\n{ASD} | {ASD}\ | {ASD}{ASD}]*{ASD}
-_ID     [{L} | {E}]+[{L} | {E} | {_INT} | {_FLOAT} | {AS}{_STRING}{AS} | {_COMENTARIO} ]*
+_COMENTARIO "/*"({L}|{E}|{_INT}|{_FLOAT}|\n)*"*/"
+_STRING     {ASD}({E}|{L}|\\\"|\"\"|" ")*{ASD}
+_ID     ({L}|{E})+({L}|{E}|{_INT}|{_FLOAT}|({AS}{_STRING}{AS})|{_COMENTARIO})*
 WS  [ \t\n]
 
 %%
