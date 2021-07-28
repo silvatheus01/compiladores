@@ -8,17 +8,15 @@ _INT    [1-9]+[0-9]*|0
 _FLOAT   {_INT}("."{_INT}*)?([Ee]("+"|"-")?{_INT})?
 _FOR    [Ff][Oo][Rr]
 _IF     [Ii][Ff]
-CHAR      ({L}|{_INT}|" "|{E}|"//"|\\|\/|"+")
-COMENTARIO_S    "//"{CHAR}*("*/")?
-COMENTARIO_C    "/*"({CHAR}|\n|"/ *")*"*/"
+COMENTARIO_S    "//"[^\n]*("*/")?
+COMENTARIO_C    ("/*")[^"*"]*[^"/"]*("*/")
 _COMENTARIO ({COMENTARIO_C}|{COMENTARIO_S})
-_STRING     {ASD}({CHAR}|\\\"|("\"\""))*{ASD}
+_STRING     {AS}([^"\""\n']|\\{ASD}|{ASD}{ASD})*{AS}
 _ID     ({L}|{E})({L}|{E}|{_FLOAT}|({AS}{_STRING}{AS})|{_COMENTARIO})*
 WS  [ \t\n]
 
 %%
     /* Padrões e ações. Nesta seção, comentários devem ter um tab antes */
-    /*enum TOKEN { _ID = 256, _FOR, _IF, _INT, _FLOAT, _MAIG, _MEIG, _IG, _DIF, _STRING, _COMENTARIO };*/
 
 {WS}    { /* ignora espaços, tabs e '\n' */ } 
 {_FOR}  {return _FOR; }
