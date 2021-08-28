@@ -11,26 +11,18 @@ F -> id { Print(id + "@"); }
    | num { Print( num ); }
    | ( E )
 
+Nome das funções, a função print é diferente
+N -> dtos( EV )
+    | max( EV )
+    | print E
+
 Rotina
-R -> nome_funcao( P )
-    | nome_funcao(ε)
-
-Parametros
-P   -> P'V
-    | P'
-
+R -> N( EV )
+    
 Virgula
-V -> ,P
+V -> ,EV
     | ε
-
-Parâmetros (Para eliminar recursividade a esquerda)
-P' -> E
-    | P
-
 
 Bloco de código
 B -> E;B
     | ε
-
-Imprimir na saída padrão (print)
-I -> print(E)
