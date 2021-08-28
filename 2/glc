@@ -1,0 +1,36 @@
+A -> id { Print( id ); } = E { Print( "="); }
+E -> T E'
+E' -> + T { Print( "+"); } E'
+    | - T { Print( "-"); } E'
+    | ε
+T -> F T'
+T' -> * F { Print( "*"); } T'
+    | / F { Print( "/"); } T'
+    | ε
+F -> id { Print(id + "@"); }
+   | num { Print( num ); }
+   | ( E )
+
+Rotina
+R -> nome_funcao( P )
+    | nome_funcao(ε)
+
+Parametros
+P   -> P'V
+    | P'
+
+Virgula
+V -> ,P
+    | ε
+
+Parâmetros (Para eliminar recursividade a esquerda)
+P' -> E
+    | P
+
+
+Bloco de código
+B -> E;B
+    | ε
+
+Imprimir na saída padrão (print)
+I -> print(E)
