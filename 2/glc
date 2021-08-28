@@ -1,3 +1,12 @@
+Bloco de código
+B -> A;B
+    | print E P;B { Print( "print + #" ); }
+    | ε (EOF)
+
+Print
+P -> + EP
+    | ε
+
 A -> id { Print( id ); } = E { Print( "="); }
 E -> T E'
 E' -> + T { Print( "+"); } E'
@@ -10,19 +19,15 @@ T' -> * F { Print( "*"); } T'
 F -> id { Print(id + "@"); }
    | num { Print( num ); }
    | ( E )
+   | max(E,E) { Print( "max + #" ); }
+   | dtos(E) { Print( "dtos + #" ); }
 
-Nome das funções, a função print é diferente
-N -> dtos( EV )
-    | max( EV )
-    | print E
-
-Rotina
-R -> N( EV )
-    
-Virgula
-V -> ,EV
+---------------------------------------------------------------------------
+String
+S -> KS'
+S' -> + KS'
     | ε
 
-Bloco de código
-B -> E;B
-    | ε
+K -> string
+    | dtos(E)
+    | id { Print(id + "@"); }
