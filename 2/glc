@@ -1,11 +1,7 @@
 Bloco de código
 B -> A;B
-    | print E P;B { Print( "print + #" ); }
+    | print E;B { Print( "print + #" ); }
     | ε (EOF)
-
-Print
-P -> + EP
-    | ε
 
 A -> id { Print( id ); } = E { Print( "="); }
 E -> T E'
@@ -17,17 +13,22 @@ T' -> * F { Print( "*"); } T'
     | / F { Print( "/"); } T'
     | ε
 F -> id { Print(id + "@"); }
-   | num { Print( num ); }
-   | ( E )
-   | max(E,E) { Print( "max + #" ); }
-   | dtos(E) { Print( "dtos + #" ); }
+    | num { Print( num ); }
+    | ( E )
+    | max(E,E) { Print( "max + #" ); }
+    | dtos(E) { Print( "dtos + #" ); }
+    | string { Print( string ); }
 
----------------------------------------------------------------------------
+----------------------------------------------
 String
 S -> KS'
 S' -> + KS'
     | ε
 
-K -> string
+K -> string { Print(string); }
     | dtos(E)
     | id { Print(id + "@"); }
+
+Print
+P -> + EP
+    | ε
