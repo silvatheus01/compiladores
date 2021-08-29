@@ -1,15 +1,13 @@
 %{
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>		// Necessário para usar strings
+#include <string>
 #include <iostream>
 
 using namespace std;
-  
+
 int token;
 string lexema;
-int cont;
-
 
 void A();
 void E();
@@ -23,7 +21,7 @@ void P();
 
 void casa( int );
 
-enum { tk_id = 256, tk_string, tk_num, tk_funcao };
+enum { tk_id = 256, tk_string, tk_num, tk_print };
 %}
 
 WS	[ \n\t]
@@ -40,13 +38,13 @@ AS      ({ASS}|{ASD})
 
 STRING     {AS}([^"\""\n']|\\{ASD}|{ASD}{ASD})*{AS}
 
-FUNCAO      (dtos|max|print)
+PRINT      (print)
 
 %%
 
 {WS}  		{ }
 
-{FUNCAO}    {return tk_funcao;}
+{PRINT}    {return tk_print;}
 {NUM} 		{ return tk_num; }
 {ID}		{ return tk_id; }
 {STRING}   {return tk_string;}
@@ -55,6 +53,7 @@ FUNCAO      (dtos|max|print)
 .		{ return yytext[0]; }
 
 %%
+
 
 int next_token() {
     return yylex();
@@ -66,20 +65,14 @@ void print_lexema(){
 
 
 void B(){
-    if(token == tk_funcao){
-        casa(tk_funcao); E(); printf("print # "); casa(';'); B();
+    if(token == tk_print){
+        casa(tk_print); E(); printf("print # "); casa(';'); B();
     } 
     else if(token == tk_id){
         A(); casa(';'); B();
     }
 }
 
-void P(){
-    if(token == '+'){
-        casa('+'); E(); P();
-    }
-        
-}
 
 void A() {
   casa(tk_id); print_lexema(); casa('='); E(); printf("= ");        
@@ -112,25 +105,28 @@ void T_linha(){
 void F(){
     if(token == tk_id){
         casa(tk_id);
-        print_lexema();
+        if(token != '('){
+            print_lexema();
+            printf("@ ");
+        }else{
+            string temp = lexema;
+            casa('('); E();P(); casa(')'); 
+            cout << temp + " " + "#" + " ";
+        }
     }else if(token == tk_num){
         casa(tk_num);
         print_lexema();
     }else if(token == '('){
-        casa('('); E(); casa(')');
-    }else if(token == tk_funcao){
-        casa(tk_funcao);
-        if(token == '('){
-            casa('('); E();
-            if(token == ','){
-                casa(','); E(); casa(')'); printf("max # ");
-            }else{
-                casa(')'); printf("dtos # ");
-            }               
-        }           
+        casa('('); E(); casa(')');          
     }else if(token == tk_string){
         casa(tk_string);
         print_lexema();
+    }
+}
+
+void P(){
+    if(token == ','){
+        casa(','); E(); P();
     }
 }
 
@@ -139,21 +135,13 @@ void casa( int esperado ) {
     lexema = yytext;
     token = next_token();
   }
-    
-   
-  else {
-    printf( "\nEsperado %d, encontrado: %d. Tokens lidos: %d\n", esperado, token, cont );
-    exit( 1 );
-  }
 }
 
 int main() {
   token = next_token();
-  // Pega o lexema
+  // Pega o lexema atual
   lexema = yytext;
-  B();
-  printf( "\nSintaxe ok!\n" );
-  
+  // A ideia é que um programa sempre parte de um bloco de código.
+  B();  
   return 0;
 }
-

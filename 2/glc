@@ -1,34 +1,27 @@
+Esse é o esboço para gerar o Analisador Recursivo Descendente que vai servir de apoio
+para geração da NPR (Notação Polonesa Reversa). A geração da notação foi feita com o
+uso da função printf(), mas pode ser qualquer outra função que imprima na saída padrão.
+
 Bloco de código
-B -> A;B
-    | print E;B { Print( "print + #" ); }
+B -> print E { printf("print # "); } ;B
+    | A;B
     | ε (EOF)
 
-A -> id { Print( id ); } = E { Print( "="); }
+A -> id { printf("%s ", id); } = E { printf("= "); }
 E -> T E'
-E' -> + T { Print( "+"); } E'
-    | - T { Print( "-"); } E'
+E' -> + T { printf("+ "); } E'
+    | - T { printf("- "); } E'
     | ε
 T -> F T'
-T' -> * F { Print( "*"); } T'
-    | / F { Print( "/"); } T'
+T' -> * F { printf("* "); } T'
+    | / F { printf("/ "); } T'
     | ε
-F -> id { Print(id + "@"); }
-    | num { Print( num ); }
+F -> id { printf("%s @ ", id); }
+    | funcao(EP) { printf( "'nome_da_funcao' # ",...); }
+    | num { printf(num, %d); }
     | ( E )
-    | max(E,E) { Print( "max + #" ); }
-    | dtos(E) { Print( "dtos + #" ); }
-    | string { Print( string ); }
+    | string { printf("%s",string); }
 
-----------------------------------------------
-String
-S -> KS'
-S' -> + KS'
-    | ε
-
-K -> string { Print(string); }
-    | dtos(E)
-    | id { Print(id + "@"); }
-
-Print
-P -> + EP
-    | ε
+Parametros de uma funcao
+P -> ,EP
+| ε
