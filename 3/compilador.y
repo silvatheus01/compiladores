@@ -26,25 +26,35 @@ void yyerror(const char *);
 
 %%
 
-O: '{' '}'
+// Definição de objeto
+DEFO: '{' '}'
   ;
 
-A: '[' ']'
+// Definição de array
+DEFA: '[' ']'
   ;
 
-LVALUEPROP: E '[' E ']' 
-  | E '.' id
+// Array preenchido
+AP: '[' id '=' E ']'AP
+  | '[' id '=' S ']'AP
+  | '[' num ']'AP
+  | 
+  ;
+
+LVALUEPROP: id AP
+  | id '.' id
   ;
 
 
 RVALUE: E
   | S
-  | LVALUEPROP
+  | DEFO
+  | DEFA
+  | LVALUEPROP R
   ;
 
 
-LVALUE: id
-  | dv id 
+LVALUE: dv id 
   | LVALUEPROP
   ;
 
@@ -55,16 +65,53 @@ R: '=' RVALUE R
   ;
 
 // Bloco de código
-B: LVALUE '=' RVALUE R V ';' B
-  | LVALUEPROP '=' RVALUE ';' B
-  | dv id ';' B
-  | 
-  // Falta regras
+B: LVALUE '=' RVALUE ';' B
+  | dv id V ';' B
+  | FOR B
+  | IF B
+  | WHILE B
   ;
 
 V: ',' id '=' RVALUE V
   | ',' id V
   |
+  ;
+
+S: string '+' S
+  | id
+  | string
+  ;
+
+C: E ol E
+  | S ol S
+  ;
+
+FOR1: dv id '=' num
+  | id '=' num
+  | dv id
+  ;
+
+FOR2: C
+  ;
+
+FOR3: id '=' E
+  ;
+
+FOR: for'('FOR1 ';' FOR2 ';' FOR3)'{' B '}'
+  ;
+
+IF: if'('C')' B IFELSE
+  ;
+
+ELSE: else'{' B '}'
+  ;
+
+IFELSE: if else'('C')' '{'B'}' IFELSE
+  | ELSE
+  |
+  ;
+
+WHILE: while'('C')''{' B '}'
   ;
 
 E: T E'
@@ -87,11 +134,6 @@ F: id { printf("%s @ ", id); }
   | num { printf(num, %d); }
   | ( E )
   ;
-
-S: '+' string S
-  |
-  ;
-
   
 %%
 

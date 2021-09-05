@@ -19,6 +19,8 @@ LE      >=
 EQ      ==
 NE      !=
 
+OL      [GT|GE|LT|LE|EQ|NE]
+
 DV      let
 
 %%
