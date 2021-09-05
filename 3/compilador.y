@@ -7,11 +7,16 @@
 using namespace std;
 
 struct Atributos {
-  string e;
-  string d;
+  string nome;
 };
 
 #define YYSTYPE Atributos
+
+map<string, int> vars;
+int cont_linha = 0;
+
+void insere_var(string var);
+void checa_var(string var);
 
 int yylex();
 int yyparse();
@@ -19,7 +24,7 @@ void yyerror(const char *);
 
 %}
 
-%token NUM CTE X
+%token OL DV FOR_T WHILE_T IF_T ELSE_T IFELSE_T NUM ID STRING
 
 // Indica o símbolo inicial da gramática
 %start B
@@ -97,7 +102,7 @@ FOR2: C
 FOR3: id '=' E
   ;
 
-FOR: for'('FOR1 ';' FOR2 ';' FOR3)'{' B '}'
+FOR: FOR_T'('FOR1 ';' FOR2 ';' FOR3')''{' B '}'
   ;
 
 IF: if'('C')' B IFELSE
@@ -138,6 +143,21 @@ F: id { printf("%s @ ", id); }
 %%
 
 #include "lex.yy.c"
+
+void insere_var(string var){
+  if(vars.find(var) != vars.end()){
+    cout << "a variável '"  + var + "' já foi declarada na linha" linha;
+    exit(1);
+  }
+  vars.insert({var,linha});
+}
+
+void checa_var(string var){
+  if(vars.find(var) == vars.end()){
+    cout << "a variável '"  + var + "' não foi declarada";
+    exit(1);
+  }
+}
 
 void yyerror( const char* st ) {
    puts( st ); 
