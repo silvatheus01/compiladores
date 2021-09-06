@@ -29,6 +29,7 @@ LE      >=
 EQ      ==
 NE      !=
 
+    /*Operadores lógicos*/
 OL      [GT|GE|LT|LE|EQ|NE]
 
     /*Define uma variável*/
@@ -44,15 +45,15 @@ DV      let
 
 {DV}        {return DV;}
 
-{FOR}       {return "for";}
-{WHILE}     {return "while";}
+{FOR}       {return FOR_T;}
+{WHILE}     {return WHILE_T;}
 
-{IF}        {return "if";}
-{ELSE}      {return "else";}
-{IFELSE}    {return "if else";}
+{IF}        {return IF_T;}
+{ELSE}      {return ELSE_T;}
+{IFELSE}    {return IFELSE_T;}
 
 {NUM} 		{ return NUM; }
-{ID}		{ yylval.nome = yytext; return ID; }
+{ID}		{ return ID; }
 {STRING}   {return STRING;}
 
 
