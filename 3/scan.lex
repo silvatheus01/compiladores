@@ -15,11 +15,11 @@ STRING  {AS}([^"\""\n']|\\{ASD}|{ASD}{ASD})*{AS}
     /*Pula linha*/
 PL      \\n
 
-FOR     for
-WHILE    while
+FOR     "for"
+WHILE    "while"
 
-IF        if
-ELSE      else
+IF        "if"
+ELSE      "else"
 IFELSE    IF[ ]ELSE
 
 GT      <
@@ -29,11 +29,11 @@ LE      >=
 EQ      ==
 NE      !=
 
-    /*Operadores lógicos*/
-OL      [GT|GE|LT|LE|EQ|NE]
+    /*Operadores relacionais*/
+OR      [GT|GE|LT|LE|EQ|NE]
 
     /*Define uma variável*/
-DV      let
+DV      "let"
 
 %%
 
@@ -41,9 +41,11 @@ DV      let
 
 {PL}        {cont_linha++;}
 
-{OL}        {return OL;}
 
-{DV}        {return DV;}
+{OR}        {yylval.c = novo + yytext; 
+            return OR_T;}
+
+{DV}        {return DV_T;}
 
 {FOR}       {return FOR_T;}
 {WHILE}     {return WHILE_T;}
@@ -52,9 +54,14 @@ DV      let
 {ELSE}      {return ELSE_T;}
 {IFELSE}    {return IFELSE_T;}
 
-{NUM} 		{ return NUM; }
-{ID}		{ return ID; }
-{STRING}   {return STRING;}
+{NUM} 		{ yylval.c = novo + yytext;
+            return NUM_T; }
 
+{ID}		{ yylval.c = novo + yytext;
+            return ID_T; }
 
-.		{ return yytext[0]; }
+{STRING}    {yylval.c = novo + yytext;
+            return STRING_T;}
+
+.		    { yylval.c = novo + yytext;
+            return yytext[0]; }
