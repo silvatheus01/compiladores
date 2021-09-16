@@ -51,7 +51,7 @@ S: B { imprime(resolve_enderecos($1.c));}
   ;
 
 // Bloco de código
-B: LVALUE '=' RVALUE V ';' B  {$$.c = $1.c + $3.c  + "=" + "^" + $4.c + $6.c;}
+B: LVALUE '=' RVALUE R V ';' B  {$$.c = $1.c + $3.c  + $4.c + "=" + "^" + $5.c + $7.c;}
   | FOR B
   | IF B
   | WHILE B
@@ -78,7 +78,7 @@ RVALUEPROP: ID_T AP   {$$.c = $1.c + "@";}
   | ID_T '.' ID_T     {$$.c = $1.c + "@" + ($3.c + "[@]");}
   ;
 
-LVALUEPROP: ID_T AP   {$$.c = $1.c + "@";}
+LVALUEPROP: ID_T AP   {$$.c = $1.c;}
   | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c;}
   | RVALUEPROP
   ;
@@ -88,29 +88,30 @@ RVALUE: E
   | STR
   | DEFO
   | DEFA
-  | LVALUEPROP R
+  | LVALUE
   ;
 
 
-LVALUE: DV_T ID_T {$$.c = $2.c + "&";}
-  | LVALUEPROP    
+LVALUE: DV_T ID_T {$$.c = $2.c + "&" + $2.c;}
+  | ID_T          { $$.c = $1.c; }
   ;
 
 
 // Duas ou mais instanciações 
-R: '=' RVALUE R {$$.c = $2.c;}
+R: '=' RVALUE R {$$.c = $2.c + "=";} // Para múltiplas atribuições
   |             {$$.c = novo;}        
   ;
 
 // Virgula
-V: ',' ID_T '=' RVALUE V  {$$.c = $2.c + "&" + $4.c + "=" + "^" +$5.c;}
+V: ',' ID_T '=' RVALUE V  {$$.c = $2.c + "&" + $2.c + $4.c + "=" + "^" + $5.c;}
   | ',' ID_T V            {$$.c = $2.c + "&" + $3.c;}
   |                       {$$.c = novo;}
   ;
 
 STR: STRING_T '+' STR   {$$.c = $1.c + $3.c + "+";}
-  | ID_T                {$$.c = $1.c;}
-  | STRING_T            {$$.c = $1.c;}
+  | ID_T '+' STR        {$$.c = $1.c + "@" + $3.c + "+";} 
+  | STRING_T
+  | ID_T                {$$.c = $1.c + "@";} 
   ;
 
 C: E OR_T E
@@ -157,7 +158,7 @@ T: T '*' F  { $$.c = $1.c + $3.c + "*"; }
   ;
 
 
-F: ID_T       { $$.c = $1.c; }
+F: ID_T       { $$.c = $1.c + "@"; }
   | NUM_T     { $$.c = $1.c; }
   | '(' E ')' { $$ = $2; }
   ;
