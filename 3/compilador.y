@@ -37,13 +37,13 @@ void yyerror(const char *);
 
 %}
 
-%token DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T
+%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T
 
 // Sentença inicial da gramática
 %start S
 
 %right '=' 
-%nonassoc '>' '<'
+%nonassoc '>' '<' OR_T
 %left '+' '-'
 %left '*' '/'
 
@@ -60,9 +60,6 @@ CMD: LVALUE '=' RVALUE R V ';' {$$.c = $1.c + $3.c  + $4.c + "=" + "^" + $5.c;}
 
 // Bloco de código
 CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
-  | FOR CMDs    {$$.c = $1.c + $2.c;}
-  | IF CMDs     {$$.c = $1.c + $2.c;}
-  | WHILE CMDs  {$$.c = $1.c + $2.c;}
   |             {$$.c = novo;}
   ;
 
@@ -77,7 +74,6 @@ DEFA: '[' ']' {$$.c = novo + "[]";}
 
 // Array preenchido
 AP: '[' ID_T '=' E ']'AP    {$$.c = $2.c + "@" + $4.c + "=" + "^" + $6.c + "[=]";}
-  | '[' ID_T '=' STR ']'AP  {$$.c = $2.c + "@" + $4.c + "=" + "^" + $6.c + "[=]";}
   | '[' NUM_T ']'AP         {$$.c = $2.c + $4.c + "[=]";}
   | 
   ;
@@ -93,7 +89,6 @@ LVALUEPROP: ID_T AP   {$$.c = $1.c;}
 
 
 RVALUE: E
-  | STR
   | DEFO
   | DEFA
   | LVALUE
@@ -116,34 +111,39 @@ V: ',' ID_T '=' RVALUE V  {$$.c = $2.c + "&" + $2.c + $4.c + "=" + "^" + $5.c;}
   |                       {$$.c = novo;}
   ;
 
-STR: STRING_T '+' STR   {$$.c = $1.c + $3.c + "+";}
-  | ID_T '+' STR        {$$.c = $1.c + "@" + $3.c + "+";} 
-  | STRING_T
-  | ID_T                {$$.c = $1.c + "@";} 
-  ;
-
 // Condição
 C: E '<' E           {$$.c = $1.c + $3.c + $2.c;}
   | E '>' E          {$$.c = $1.c + $3.c + $2.c;}
+  | E OR_T E         {$$.c = $1.c + $3.c + $2.c;}
   ;
 
 
-IF: IF_T'('C')'CMD ELSEIF        {string if_ou_elseif = gera_label("if_ou_elseif");
-                                  $$.c = $3.c + "!" + if_ou_elseif + "?" +  $5.c + (":" + if_ou_elseif);}
-  | IF_T'('C')''{'CMDs'}'ELSEIF  {string if_ou_elseif = gera_label("if_ou_elseif");
-                                  $$.c = $3.c + "!" + if_ou_elseif + "?" +  $6.c + (":" + if_ou_elseif);}
+IF: IF_T'('C')'CMD ELSEIF         {string if_ou_elseif = gera_label("if_ou_elseif");
+                                  $$.c = $3.c + "!" + if_ou_elseif + "?" +  $5.c + (":" + if_ou_elseif) + $6.c;}
+  | IF_T'('C')''{'CMDs'}'ELSEIF   {string if_ou_elseif = gera_label("if_ou_elseif");
+                                  $$.c = $3.c + "!" + if_ou_elseif + "?" +  $6.c + (":" + if_ou_elseif) + $8.c;}
+  | IF_T'('C')'CMD ELSE           {string if_else = gera_label("if_else");
+                                  $$.c = $3.c + "!" + if_else + "?" +  $5.c + (":" +  if_else);}
+  | IF_T'('C')''{'CMDs'}'ELSE     {string if_else = gera_label("if_else");
+                                  $$.c = $3.c + "!" + if_else + "?" +  $6.c + (":" + if_else);}
+  | IF_T'('C')'CMD                {string if_end = gera_label("if_end");
+                                  $$.c = $3.c + "!" + if_end + "?" +  $5.c + (":" + if_end);}
+  | IF_T'('C')''{'CMDs'}'         {string if_end = gera_label("if_end");
+                                  $$.c = $3.c + "!" + if_end + "?" +  $6.c + (":" + if_end);}
+  ;
+
+ELSEIF: ELSEIF_T'('C')' CMD ELSEIF  {string elseif = gera_label("elseif");
+                                    $$.c = $3.c + "!" + elseif + "?" +  $5.c + (":" + elseif) + $6.c;}
+  | ELSEIF_T'('C')''{'CMDs'}'ELSEIF {string elseif = gera_label("elseif");
+                                    $$.c = $3.c + "!" + elseif + "?" +  $6.c + (":" + elseif) + $8.c;}
+  | ELSEIF_T'('C')''{'CMDs'}'ELSE   {string elseif_else = gera_label("elseif_else");
+                                    $$.c = $3.c + "!" + elseif_else + "?" + (":" + elseif_else) + $8.c +  $6.c;}
+  | ELSEIF_T'('C')' CMD ELSE        {string elseif_else = gera_label("elseif_else");
+                                    $$.c = $3.c + "!" + elseif_else + "?" + (":" + elseif_else) + $6.c +  $5.c;}                            
   ;
 
 ELSE: ELSE_T'{' CMDs '}'  {$$.c = $3.c;}
   | ELSE_T CMD            {$$.c = $2.c;}   
-  ;
-
-ELSEIF: ELSEIF_T'('C')' CMD ELSEIF  {string elseif = gera_label("elseif");
-                                    $$.c = $3.c + "!" + elseif + "?" +  $5.c + (":" + elseif);}
-  | ELSEIF_T'('C')''{'CMDs'}'ELSEIF {string elseif = gera_label("elseif");
-                                    $$.c = $3.c + "!" + elseif + "?" +  $6.c + (":" + elseif);}
-  | ELSE                            
-  |
   ;
 
 FOR1: DV_T ID_T '=' NUM_T
@@ -177,6 +177,7 @@ T: T '*' F  { $$.c = $1.c + $3.c + "*"; }
 
 F: ID_T       { $$.c = $1.c + "@"; }
   | NUM_T     { $$.c = $1.c; }
+  | STRING_T  { $$.c = $1.c; }
   | '(' E ')' { $$ = $2; }
   ;
   

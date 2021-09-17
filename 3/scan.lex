@@ -20,7 +20,7 @@ WHILE    "while"
 
 IF        "if"
 ELSE      "else"
-ELSEIF    "if else"
+ELSEIF    "else if"
 
 LT      "<="
 LE      ">="
@@ -36,6 +36,9 @@ DV      "let"
 %%
 
 {WS}  		{ }
+
+{OR}		{ yylval.c = novo + yytext;
+            return OR_T; }
 
 {PL}        {cont_linha++;}
 
