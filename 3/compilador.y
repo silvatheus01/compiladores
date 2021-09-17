@@ -37,25 +37,33 @@ void yyerror(const char *);
 
 %}
 
-%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T IFELSE_T NUM_T ID_T STRING_T
+%token DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T
 
 // Sentença inicial da gramática
 %start S
 
 %right '=' 
-%nonassoc OR_T
-%left '+' '-' '*' '/' '%'
+%nonassoc '>' '<'
+%left '+' '-'
+%left '*' '/'
+
 
 %%
-S: B { imprime(resolve_enderecos($1.c));}
+S: CMDs { imprime(resolve_enderecos($1.c));}
+  ;
+
+CMD: LVALUE '=' RVALUE R V ';' {$$.c = $1.c + $3.c  + $4.c + "=" + "^" + $5.c;}
+  | FOR                    
+  | IF                    
+  | WHILE                  
   ;
 
 // Bloco de código
-B: LVALUE '=' RVALUE R V ';' B  {$$.c = $1.c + $3.c  + $4.c + "=" + "^" + $5.c + $7.c;}
-  | FOR B
-  | IF B
-  | WHILE B
-  |                            {$$.c = novo;}
+CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
+  | FOR CMDs    {$$.c = $1.c + $2.c;}
+  | IF CMDs     {$$.c = $1.c + $2.c;}
+  | WHILE CMDs  {$$.c = $1.c + $2.c;}
+  |             {$$.c = novo;}
   ;
 
 
@@ -114,8 +122,28 @@ STR: STRING_T '+' STR   {$$.c = $1.c + $3.c + "+";}
   | ID_T                {$$.c = $1.c + "@";} 
   ;
 
-C: E OR_T E
-  | STR OR_T STR
+// Condição
+C: E '<' E           {$$.c = $1.c + $3.c + $2.c;}
+  | E '>' E          {$$.c = $1.c + $3.c + $2.c;}
+  ;
+
+
+IF: IF_T'('C')'CMD ELSEIF        {string if_ou_elseif = gera_label("if_ou_elseif");
+                                  $$.c = $3.c + "!" + if_ou_elseif + "?" +  $5.c + (":" + if_ou_elseif);}
+  | IF_T'('C')''{'CMDs'}'ELSEIF  {string if_ou_elseif = gera_label("if_ou_elseif");
+                                  $$.c = $3.c + "!" + if_ou_elseif + "?" +  $6.c + (":" + if_ou_elseif);}
+  ;
+
+ELSE: ELSE_T'{' CMDs '}'  {$$.c = $3.c;}
+  | ELSE_T CMD            {$$.c = $2.c;}   
+  ;
+
+ELSEIF: ELSEIF_T'('C')' CMD ELSEIF  {string elseif = gera_label("elseif");
+                                    $$.c = $3.c + "!" + elseif + "?" +  $5.c + (":" + elseif);}
+  | ELSEIF_T'('C')''{'CMDs'}'ELSEIF {string elseif = gera_label("elseif");
+                                    $$.c = $3.c + "!" + elseif + "?" +  $6.c + (":" + elseif);}
+  | ELSE                            
+  |
   ;
 
 FOR1: DV_T ID_T '=' NUM_T
@@ -129,21 +157,10 @@ FOR2: C
 FOR3: ID_T '=' E
   ;
 
-FOR: FOR_T'('FOR1 ';' FOR2 ';' FOR3')''{' B '}'
+FOR: FOR_T'('FOR1 ';' FOR2 ';' FOR3')''{' CMDs '}'
   ;
 
-IF: IF_T'('C')' B IFELSE
-  ;
-
-ELSE: ELSE_T'{' B '}'
-  ;
-
-IFELSE: IFELSE_T'('C')' '{'B'}' IFELSE
-  | ELSE
-  |
-  ;
-
-WHILE: WHILE_T'('C')''{' B '}'
+WHILE: WHILE_T'('C')''{' CMDs '}'
   ;
 
 
@@ -227,7 +244,7 @@ void imprime(vector<string> codigo){
 
 
 void yyerror( const char* msg ) {
-  cout << "Erro de sintaxe próximo a:" << yytext << endl;
+  cout << "Erro de sintaxe na linha " << to_string(cont_linha) << " próximo a:" << yytext << endl;
   exit( 1 );
 }
 

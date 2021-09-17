@@ -10,27 +10,25 @@ ASS  '
 ASD  \"
 AS      ({ASS}|{ASD})
 
-STRING  {AS}([^"\""\n']|\\{ASD}|{ASD}{ASD})*{AS}
+STRING  ({ASD}([^"\""\n]|\\{ASD}|{ASD}{ASD}|{ASS}{ASS})*{ASD}|{ASS}([^"\""\n]|\\{ASD}|{ASD}{ASD}|{ASS}{ASS})*{ASS})
 
     /*Pula linha*/
-PL      \\n
+PL      "\n"
 
 FOR     "for"
 WHILE    "while"
 
 IF        "if"
 ELSE      "else"
-IFELSE    IF[ ]ELSE
+ELSEIF    "if else"
 
-GT      <
-GE      >
-LT      <=
-LE      >=
-EQ      ==
-NE      !=
+LT      "<="
+LE      ">="
+EQ      "=="
+NE      "!="
 
     /*Operadores relacionais*/
-OR      [GT|GE|LT|LE|EQ|NE]
+OR      ({LT}|{LE}|{EQ}|{NE})
 
     /*Define uma variável*/
 DV      "let"
@@ -41,10 +39,6 @@ DV      "let"
 
 {PL}        {cont_linha++;}
 
-
-{OR}        {yylval.c = novo + yytext; 
-            return OR_T;}
-
 {DV}        {return DV_T;}
 
 {FOR}       {return FOR_T;}
@@ -52,7 +46,7 @@ DV      "let"
 
 {IF}        {return IF_T;}
 {ELSE}      {return ELSE_T;}
-{IFELSE}    {return IFELSE_T;}
+{ELSEIF}    {return ELSEIF_T;}
 
 {NUM} 		{ yylval.c = novo + yytext;
             return NUM_T; }
