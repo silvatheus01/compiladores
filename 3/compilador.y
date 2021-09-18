@@ -37,7 +37,7 @@ void yyerror(const char *);
 
 %}
 
-%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T
+%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T NUMNEG_T ID_T STRING_T
 
 // Sentença inicial da gramática
 %start S
@@ -52,7 +52,7 @@ void yyerror(const char *);
 S: CMDs { imprime(resolve_enderecos($1.c));}
   ;
 
-CMD: LVALUE '=' RVALUE R V ';' {$$.c = $1.c + $3.c  + $4.c + "=" + "^" + $5.c;}
+CMD: E V ';'                 {$$.c = $1.c + "^" + $2.c;}
   | FOR                    
   | IF                    
   | WHILE                  
@@ -73,40 +73,23 @@ DEFA: '[' ']' {$$.c = novo + "[]";}
   ;
 
 // Array preenchido
-AP: '[' ID_T '=' E ']'AP    {$$.c = $2.c + "@" + $4.c + "=" + "^" + $6.c + "[=]";}
-  | '[' NUM_T ']'AP         {$$.c = $2.c + $4.c + "[=]";}
-  | 
+AP: '[' ID_T '=' E ']'AP  {$$.c = $2.c + "@" + $4.c + "=" + "^" + $6.c + "[=]";}
+  | '[' E ']'AP       {$$.c = $2.c + $4.c + "[=]";}
+  | '[' ID_T '=' E ']'    {$$.c = $2.c + "@" + $4.c + "=";}
+  | '[' E ']'         {$$.c = $2.c;}
   ;
 
-RVALUEPROP: ID_T AP   {$$.c = $1.c + "@";}
-  | ID_T '.' ID_T     {$$.c = $1.c + "@" + ($3.c + "[@]");}
-  ;
 
-LVALUEPROP: ID_T AP   {$$.c = $1.c;}
+LVALUEPROP: ID_T AP   {$$.c = $1.c + $2.c;}
   | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c;}
-  | RVALUEPROP
+  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + $4.c;}
   ;
 
-
-RVALUE: E
-  | DEFO
-  | DEFA
-  | LVALUE
-  ;
-
-
-LVALUE: DV_T ID_T {$$.c = $2.c + "&" + $2.c;}
-  | ID_T          { $$.c = $1.c; }
-  ;
-
-
-// Duas ou mais instanciações 
-R: '=' RVALUE R {$$.c = $2.c + "=";} // Para múltiplas atribuições
-  |             {$$.c = novo;}        
+LVALUE: ID_T {$$.c = $1.c;}
   ;
 
 // Virgula
-V: ',' ID_T '=' RVALUE V  {$$.c = $2.c + "&" + $2.c + $4.c + "=" + "^" + $5.c;}
+V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c;}
   | ',' ID_T V            {$$.c = $2.c + "&" + $3.c;}
   |                       {$$.c = novo;}
   ;
@@ -164,22 +147,22 @@ WHILE: WHILE_T'('C')''{' CMDs '}'
   ;
 
 
-E: E '+' T  { $$.c = $1.c + $3.c + "+"; }
-  | E '-' T { $$.c = $1.c + $3.c + "-"; }
-  | T
+E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
+  | E '-' E             { $$.c = $1.c + $3.c + "-"; }
+  | E '*' E             { $$.c = $1.c + $3.c + "*"; }
+  | E '/' E             { $$.c = $1.c + $3.c + "/"; }
+  | NUMNEG_T            { $$.c = $1.c; }
+  | NUM_T               { $$.c = $1.c; }
+  | STRING_T            { $$.c = $1.c; }
+  | DV_T LVALUE '=' E 	      {$$.c = $2.c + "&" + $2.c + $4.c + "=";}
+  | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "=";}
+  | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]" ;}
+  | LVALUE              { $$.c = $1.c + "@"; }
+  | LVALUEPROP
+  | DEFO
+  | DEFA
   ;
 
-T: T '*' F  { $$.c = $1.c + $3.c + "*"; }
-  | T '/' F { $$.c = $1.c + $3.c + "/"; }
-  | F
-  ;
-
-
-F: ID_T       { $$.c = $1.c + "@"; }
-  | NUM_T     { $$.c = $1.c; }
-  | STRING_T  { $$.c = $1.c; }
-  | '(' E ')' { $$ = $2; }
-  ;
   
 %%
 
