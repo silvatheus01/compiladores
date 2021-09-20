@@ -127,6 +127,11 @@ ELSE: ELSE_T'{' CMDs '}'  {$$.c = $3.c;}
   | ELSE_T CMD            {$$.c = $2.c;}   
   ;
 
+WHILE: WHILE_T'('C')''{' CMDs '}' {string while_end = gera_label("while_end");
+                                  string while_cond = gera_label("while_cond");
+                                  $$.c = novo + (":" + while_cond) + $3.c + "!" + while_end + "?" + $6.c + while_cond + "#" + (":" + while_end);}
+  ;
+
 FOR1: DV_T ID_T '=' NUM_T
   | ID_T '=' NUM_T
   | DV_T ID_T
@@ -139,9 +144,6 @@ FOR3: ID_T '=' E
   ;
 
 FOR: FOR_T'('FOR1 ';' FOR2 ';' FOR3')''{' CMDs '}'
-  ;
-
-WHILE: WHILE_T'('C')''{' CMDs '}'
   ;
 
 
