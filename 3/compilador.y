@@ -37,7 +37,7 @@ void yyerror(const char *);
 
 %}
 
-%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T NUMNEG_T ID_T STRING_T
+%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T
 
 // Sentença inicial da gramática
 %start S
@@ -73,16 +73,14 @@ DEFA: '[' ']' {$$.c = novo + "[]";}
   ;
 
 // Array preenchido
-AP: '[' ID_T '=' E ']'AP  {$$.c = $2.c + "@" + $4.c + "=" + "^" + $6.c + "[=]";}
-  | '[' E ']'AP       {$$.c = $2.c + $4.c + "[=]";}
-  | '[' ID_T '=' E ']'    {$$.c = $2.c + "@" + $4.c + "=";}
+AP: '[' E ']'AP       {$$.c = $2.c + $4.c + "[=]";}
   | '[' E ']'         {$$.c = $2.c;}
   ;
 
 
-LVALUEPROP: ID_T AP   {$$.c = $1.c + $2.c;}
+LVALUEPROP: ID_T AP   {$$.c = $1.c + "@" + $2.c;}
   | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c;}
-  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + $4.c;}
+  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c;}
   ;
 
 LVALUE: ID_T {$$.c = $1.c;}
@@ -151,14 +149,18 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | E '-' E             { $$.c = $1.c + $3.c + "-"; }
   | E '*' E             { $$.c = $1.c + $3.c + "*"; }
   | E '/' E             { $$.c = $1.c + $3.c + "/"; }
-  | NUMNEG_T            { $$.c = $1.c; }
+  | '-'E                { vector<string> t1, t2;
+                          t1.push_back("0");
+                          t2.push_back("-");                          
+                          $$.c = t1 + $2.c + t2; }
+  | '('E')'             {$$.c = $2.c;}
   | NUM_T               { $$.c = $1.c; }
   | STRING_T            { $$.c = $1.c; }
   | DV_T LVALUE '=' E 	      {$$.c = $2.c + "&" + $2.c + $4.c + "=";}
   | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "=";}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]" ;}
   | LVALUE              { $$.c = $1.c + "@"; }
-  | LVALUEPROP
+  | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
   ;

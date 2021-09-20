@@ -4,13 +4,14 @@ LETRA	[A-Za-z_]
 
 INT     [1-9]+[0-9]*|0
 NUM     {INT}("."{INT}*)?([Ee]("+"|"-")?{INT})?
+
 ID      {LETRA}({LETRA}|{DIGITO})*
 
 ASS  '
 ASD  \"
 AS      ({ASS}|{ASD})
 
-STRING  ({ASD}([^"\""\n]|\\{ASD}|{ASD}{ASD}|{ASS}{ASS})*{ASD}|{ASS}([^"\""\n]|\\{ASD}|{ASD}{ASD}|{ASS}{ASS})*{ASS})
+STRING  ({ASD}([^"\""\n']|\\{ASD})*{ASD}|{ASS}([^"\""\n']|\\{ASD})*{ASS})
 
     /*Pula linha*/
 PL      "\n"
