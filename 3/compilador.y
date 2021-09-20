@@ -73,7 +73,7 @@ DEFA: '[' ']' {$$.c = novo + "[]";}
   ;
 
 // Array preenchido
-AP: '[' E ']'AP       {$$.c = $2.c + $4.c + "[=]";}
+AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
   | '[' E ']'         {$$.c = $2.c;}
   ;
 
@@ -149,7 +149,8 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | '('E')'             {$$.c = $2.c;}
   | NUM_T               { $$.c = $1.c; }
   | STRING_T            { $$.c = $1.c; }
-  | DV_T LVALUE '=' E 	      {$$.c = $2.c + "&" + $2.c + $4.c + "=";}
+  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "=";} 
+  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";}
   | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "=";}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]" ;}
   | LVALUE              { $$.c = $1.c + "@"; }
