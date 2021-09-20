@@ -16,11 +16,11 @@ struct Atributos {
 #define YYSTYPE Atributos
 
 
-map<string, int> vars;
+map<vector<string>, int> vars;
 int cont_linha = 1;
 
-void insere_var(string var);
-void checa_var(string var);
+void insere_var(vector<string> var);
+void checa_var(vector<string> var);
 
 // Auxilia com as labels
 vector<string> operator+( vector<string> a, string b );
@@ -78,17 +78,17 @@ AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
   ;
 
 
-LVALUEPROP: ID_T AP   {$$.c = $1.c + "@" + $2.c;}
-  | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c;}
-  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c;}
+LVALUEPROP: ID_T AP   {$$.c = $1.c + "@" + $2.c; checa_var($1.c);}
+  | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c; checa_var($1.c);}
+  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; checa_var($1.c);}
   ;
 
 LVALUE: ID_T {$$.c = $1.c;}
   ;
 
 // Virgula
-V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c;}
-  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c;}
+V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; insere_var($2.c);}
+  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; insere_var($2.c);}
   |                       {$$.c = novo;}
   ;
 
@@ -149,11 +149,11 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | '('E')'             {$$.c = $2.c;}
   | NUM_T               { $$.c = $1.c; }
   | STRING_T            { $$.c = $1.c; }
-  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "=";} 
-  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";}
-  | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "=";}
-  | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]" ;}
-  | LVALUE              { $$.c = $1.c + "@"; }
+  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; insere_var($2.c);} 
+  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  insere_var($2.c);}
+  | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; checa_var($1.c);}
+  | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]";}
+  | LVALUE              { $$.c = $1.c + "@"; checa_var($1.c);}
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
@@ -179,17 +179,17 @@ vector<string> operator+( vector<string> a, string b ) {
 }
 
 
-void insere_var(string var){
+void insere_var(vector<string> var){
   if(vars.find(var) != vars.end()){
-    string msg = "Erro: a variável '"  + var + "' já foi declarada na linha" + to_string(vars.find(var)->second) + ".";
+    cout << "Erro: a variável '"  << var.front() << "' já foi declarada na linha " << to_string(vars.find(var)->second) << "." << endl;
     exit(1);
   }
-  vars.insert(pair<string,int>(var,cont_linha));
+  vars.insert(pair<vector<string>,int>(var,cont_linha));
 }
 
-void checa_var(string var){
+void checa_var(vector<string> var){
   if(vars.find(var) == vars.end()){
-    string msg = "Erro: a variável '"  + var + "' não foi declarada.";
+    cout << "Erro: a variável '"  << var.front() << "' não foi declarada." << endl;
     exit(1);
   }
 }

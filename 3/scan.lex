@@ -11,7 +11,7 @@ ASS  '
 ASD  \"
 AS      ({ASS}|{ASD})
 
-STRING  ({ASD}([^"\""\n']|\\{ASD})*{ASD}|{ASS}([^"\""\n']|\\{ASD})*{ASS})
+STRING  ({ASD}([^"\""\n]|\\{ASD})*{ASD}|{ASS}([^"\""\n']|\\{ASD})*{ASS})
 
     /*Pula linha*/
 PL      "\n"
