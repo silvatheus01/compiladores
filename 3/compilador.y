@@ -132,18 +132,9 @@ WHILE: WHILE_T'('C')''{' CMDs '}' {string while_end = gera_label("while_end");
                                   $$.c = novo + (":" + while_cond) + $3.c + "!" + while_end + "?" + $6.c + while_cond + "#" + (":" + while_end);}
   ;
 
-FOR1: DV_T ID_T '=' NUM_T
-  | ID_T '=' NUM_T
-  | DV_T ID_T
-  ;
-
-FOR2: C
-  ;
-
-FOR3: ID_T '=' E
-  ;
-
-FOR: FOR_T'('FOR1 ';' FOR2 ';' FOR3')''{' CMDs '}'
+FOR: FOR_T'('CMD C ';' E')''{' CMDs '}' {string for_end = gera_label("for_end");
+                                          string for_cond = gera_label("for_cond");
+                                          $$.c = $3.c + (":" + for_cond) + $4.c + "!" + for_end + "?" + $9.c  + $6.c + "^" + for_cond  + "#" + (":" + for_end);}
   ;
 
 
