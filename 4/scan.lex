@@ -49,7 +49,7 @@ DV      "let"
 
 {DV}        {return DV_T;}
 
-{RETURN}    {return RETURN_T}
+{RETURN}    {return RETURN_T;}
 
 {FUNCTION}  {return FUNCTION_T;}
 

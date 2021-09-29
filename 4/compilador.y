@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <stdbool.h>
 
 using namespace std;
 
@@ -19,7 +20,11 @@ struct Atributos {
 map<vector<string>, int> vars;
 int cont_linha = 1;
 
-void insere_var(vector<string> var);
+// Insere variável no vetor de variáveis no escopo global
+void insere_var_global(vector<string> var);
+// Insere variável no vetor de variáveis no escopo local
+void insere_var_local(vector<string> var);
+// Checa variáveis nos dois escopos
 void checa_var(vector<string> var);
 
 // Auxilia com as labels
@@ -31,10 +36,14 @@ vector<string> resolve_enderecos( vector<string> entrada );
 void imprime(vector<string> codigo);
 vector<string> novo;
 
-// Auxilia com as funções
+/*Auxilia com as funções*/
 vector<string> funcoes;
-// 
-int pos_parametros = 0;
+// Conta a posição atual de um parâmatro
+int pos_parametro = 0;
+// Conta o número de parâmetros
+int num_parametros = 0;
+bool escopo_local;
+
 
 int yylex();
 int yyparse();
@@ -60,7 +69,8 @@ S: CMDs { $$.c = $1.c + "." + funcoes; imprime(resolve_enderecos($$.c));}
 CMD: E V ';'                 {$$.c = $1.c + "^" + $2.c;}
   | FOR                    
   | IF                    
-  | WHILE                  
+  | WHILE
+  | DF                  
   ;
 
 // Bloco de código
@@ -69,27 +79,37 @@ CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
   ;
 
 // Definir função 
-DF: FUNCTION_T ID_T'('P')''{'CMDsF'}'  { string cmds_function = gera_label("funcao");
-                                        funcoes = funcoes + (":" + cmds_function) + $4.c + $7.c
+DF: FUNCTION_T ID_T'('PD')''{'CMDsF'}'  { string cmds_function = gera_label("funcao");
+                                          pos_parametro = 0;
+                                        funcoes = funcoes + (":" + cmds_function) + $4.c + $7.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";}
   ;
 
-// Parâmetros de função
-P: ID           {
-                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametros) + "[@]" + "=" + "^";
-                pos_parametros = 0;
+// Chamar função
+CF: ID_T'('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "@" + "$"; 
+                  num_parametros = 0;
+                  }
+
+// Parâmetros de função quando chamamos uma função 
+PC: E         {num_parametros++; $$.c = $1.c;}
+  | E ',' PC  {num_parametros++; $$.c = $1.c + $3.c;}
+  |           {$$.c = novo;}
+  ;
+
+// Parâmetros de função quando definimos uma função
+PD: ID_T        {
+                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^";
                 }                             
-  | ID ',' P    {
-                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametros) + "[@]" + "=" + "^";
-                pos_parametros++;
+  | ID_T ',' PD {
+                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^";
+                pos_parametro++;
                 }
-  |             {pos_parametros = 0; $$.c = novo;}
+  |             {$$.c = novo;}
   ;
 
 // Comandos para função
-CMDsF: CMDs CMDsF
-  | RETURN_T E
-  |           {$$.c = novo;}
+CMDsF: CMD CMDsF {$$.c = $1.c + $2.c;}
+  | RETURN_T E ';'   {$$.c = $2.c + "'&retorno'" + "@" + "~";}
   ;
 
 // Definição de objeto
@@ -115,8 +135,8 @@ LVALUE: ID_T {$$.c = $1.c;}
   ;
 
 // Virgula
-V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; insere_var($2.c);}
-  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; insere_var($2.c);}
+V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; insere_var_global($2.c);}
+  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; insere_var_global($2.c);}
   |                       {$$.c = novo;}
   ;
 
@@ -177,14 +197,15 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | '('E')'             {$$.c = $2.c;}
   | NUM_T               { $$.c = $1.c; }
   | STRING_T            { $$.c = $1.c; }
-  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; insere_var($2.c);} 
-  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  insere_var($2.c);}
+  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; insere_var_global($2.c);} 
+  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  insere_var_global($2.c);}
   | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; checa_var($1.c);}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]";}
   | LVALUE              { $$.c = $1.c + "@"; checa_var($1.c);}
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
+  | CF
   ;
 
   
@@ -207,7 +228,7 @@ vector<string> operator+( vector<string> a, string b ) {
 }
 
 
-void insere_var(vector<string> var){
+void insere_var_global(vector<string> var){
   if(vars.find(var) != vars.end()){
     cout << "Erro: a variável '"  << var.front() << "' já foi declarada na linha " << to_string(vars.find(var)->second) << "." << endl;
     exit(1);
