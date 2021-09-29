@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <map>
+#include <set>
 #include <vector>
 #include <stdbool.h>
 
@@ -17,13 +18,12 @@ struct Atributos {
 #define YYSTYPE Atributos
 
 
-map<vector<string>, int> vars;
+map<vector<string>, int> vars_global;
+set<vector<string>> vars_local;
 int cont_linha = 1;
 
 // Insere variável no vetor de variáveis no escopo global
-void insere_var_global(vector<string> var);
-// Insere variável no vetor de variáveis no escopo local
-void insere_var_local(vector<string> var);
+void insere_var(vector<string> var);
 // Checa variáveis nos dois escopos
 void checa_var(vector<string> var);
 
@@ -43,6 +43,7 @@ int pos_parametro = 0;
 // Conta o número de parâmetros
 int num_parametros = 0;
 bool escopo_local;
+void elimina_vars_locais();
 
 
 int yylex();
@@ -79,10 +80,12 @@ CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
   ;
 
 // Definir função 
-DF: FUNCTION_T ID_T'('PD')''{'CMDsF'}'  { string cmds_function = gera_label("funcao");
-                                          pos_parametro = 0;
+DF: FUNCTION_T ID_T'('PD')''{'CMDsF'}'  { escopo_local = true;
+                                        string cmds_function = gera_label("funcao");
+                                        pos_parametro = 0;
                                         funcoes = funcoes + (":" + cmds_function) + $4.c + $7.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
-                                        $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";}
+                                        $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";
+                                        elimina_vars_locais();}
   ;
 
 // Chamar função
@@ -97,11 +100,11 @@ PC: E         {num_parametros++; $$.c = $1.c;}
   ;
 
 // Parâmetros de função quando definimos uma função
-PD: ID_T        {
+PD: ID_T        { insere_var($1.c);
                 $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^";
                 }                             
-  | ID_T ',' PD {
-                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^";
+  | ID_T ',' PD {insere_var($1.c);
+                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^" + $3.c;
                 pos_parametro++;
                 }
   |             {$$.c = novo;}
@@ -135,8 +138,8 @@ LVALUE: ID_T {$$.c = $1.c;}
   ;
 
 // Virgula
-V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; insere_var_global($2.c);}
-  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; insere_var_global($2.c);}
+V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; insere_var($2.c);}
+  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; insere_var($2.c);}
   |                       {$$.c = novo;}
   ;
 
@@ -197,8 +200,8 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | '('E')'             {$$.c = $2.c;}
   | NUM_T               { $$.c = $1.c; }
   | STRING_T            { $$.c = $1.c; }
-  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; insere_var_global($2.c);} 
-  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  insere_var_global($2.c);}
+  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; insere_var($2.c);} 
+  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  insere_var($2.c);}
   | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; checa_var($1.c);}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]";}
   | LVALUE              { $$.c = $1.c + "@"; checa_var($1.c);}
@@ -227,20 +230,42 @@ vector<string> operator+( vector<string> a, string b ) {
   return a;
 }
 
+void elimina_vars_locais(){
+  escopo_local = false;
+  vars_local.clear();
+}
 
-void insere_var_global(vector<string> var){
-  if(vars.find(var) != vars.end()){
-    cout << "Erro: a variável '"  << var.front() << "' já foi declarada na linha " << to_string(vars.find(var)->second) << "." << endl;
-    exit(1);
+
+void insere_var(vector<string> var){
+  if(escopo_local){
+    if(vars_global.find(var) != vars_global.end()){
+      cout << "Erro: a variável '"  << var.front() << "' local já foi declarada." << endl;
+      exit(1);
+    }else{
+      vars_local.insert(var);
+    }  
+  }else{
+    if(vars_global.find(var) != vars_global.end()){
+      cout << "Erro: a variável '"  << var.front() << "' global já foi declarada na linha " << to_string(vars_global.find(var)->second) << "." << endl;
+      exit(1);
+    }else{
+      vars_global.insert(pair<vector<string>,int>(var,cont_linha));
+    }
   }
-  vars.insert(pair<vector<string>,int>(var,cont_linha));
 }
 
 void checa_var(vector<string> var){
-  if(vars.find(var) == vars.end()){
-    cout << "Erro: a variável '"  << var.front() << "' não foi declarada." << endl;
-    exit(1);
-  }
+  if(escopo_local){
+    if(vars_local.find(var) == vars_local.end() && vars_global.find(var) == vars_global.end()){
+      cout << "Erro: a variável '"  << var.front() << "' não foi declarada em nenhum escopo." << endl;
+      exit(1);
+    }   
+  }else{
+    if(vars_global.find(var) == vars_global.end()){
+      cout << "Erro: a variável '"  << var.front() << "' não foi declarada no escopo global." << endl;
+      exit(1);
+    }
+  }  
 }
 
 vector<string> resolve_enderecos( vector<string> entrada ) {
