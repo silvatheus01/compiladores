@@ -59,15 +59,16 @@ void yyerror(const char *);
 
 %right '=' 
 %nonassoc '>' '<' OR_T
-%left '+' '-'
-%left '*' '/'
+%left '+' '-' 
+%left '*' '/' '%'
 
 
 %%
 S: CMDs { $$.c = $1.c + "." + funcoes; imprime(resolve_enderecos($$.c));}
   ;
 
-CMD: E V ';'                 {$$.c = $1.c + "^" + $2.c;}
+CMD: E V ';'         {$$.c = $1.c + "^" + $2.c;}
+  | RETURN_T E ';'   {$$.c = $2.c + "'&retorno'" + "@" + "~";}
   | FOR                    
   | IF                    
   | WHILE
@@ -80,18 +81,20 @@ CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
   ;
 
 // Definir função 
-DF: FUNCTION_T ID_T'('PD')''{'CMDsF'}'  { escopo_local = true;
+DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
                                         string cmds_function = gera_label("funcao");
-                                        pos_parametro = 0;
                                         funcoes = funcoes + (":" + cmds_function) + $4.c + $7.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";
-                                        elimina_vars_locais();}
+                                        pos_parametro=0;
+                                        //elimina_vars_locais();
+                                        }
   ;
 
 // Chamar função
 CF: ID_T'('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "@" + "$"; 
                   num_parametros = 0;
                   }
+  ;
 
 // Parâmetros de função quando chamamos uma função 
 PC: E         {num_parametros++; $$.c = $1.c;}
@@ -100,19 +103,13 @@ PC: E         {num_parametros++; $$.c = $1.c;}
   ;
 
 // Parâmetros de função quando definimos uma função
-PD: ID_T        { insere_var($1.c);
-                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^";
+PD: ID_T        { /*insere_var($1.c);*/
+                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";
                 }                             
-  | ID_T ',' PD {insere_var($1.c);
-                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro) + "[@]" + "=" + "^" + $3.c;
-                pos_parametro++;
+  | PD ',' ID_T {/*insere_var($1.c);*/               
+                $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";
                 }
   |             {$$.c = novo;}
-  ;
-
-// Comandos para função
-CMDsF: CMD CMDsF {$$.c = $1.c + $2.c;}
-  | RETURN_T E ';'   {$$.c = $2.c + "'&retorno'" + "@" + "~";}
   ;
 
 // Definição de objeto
@@ -129,17 +126,17 @@ AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
   ;
 
 
-LVALUEPROP: ID_T AP   {$$.c = $1.c + "@" + $2.c; checa_var($1.c);}
-  | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c; checa_var($1.c);}
-  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; checa_var($1.c);}
+LVALUEPROP: ID_T AP   {$$.c = $1.c + "@" + $2.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; /*checa_var($1.c);*/}
   ;
 
 LVALUE: ID_T {$$.c = $1.c;}
   ;
 
 // Virgula
-V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; insere_var($2.c);}
-  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; insere_var($2.c);}
+V: ',' ID_T '=' E V       {$$.c = $2.c + "&" + $2.c + $4.c + "=" +"^" + $5.c; /*insere_var($2.c)*/;}
+  | ',' ID_T V            {$$.c = $2.c + "&" + $3.c; /*insere_var($2.c)*/;}
   |                       {$$.c = novo;}
   ;
 
@@ -155,9 +152,9 @@ IF: IF_T'('C')'CMD ELSEIF         {string if_ou_elseif = gera_label("if_ou_elsei
   | IF_T'('C')''{'CMDs'}'ELSEIF   {string if_ou_elseif = gera_label("if_ou_elseif");
                                   $$.c = $3.c + "!" + if_ou_elseif + "?" +  $6.c + (":" + if_ou_elseif) + $8.c;}
   | IF_T'('C')'CMD ELSE           {string if_else = gera_label("if_else");
-                                  $$.c = $3.c + "!" + if_else + "?" +  $5.c + (":" +  if_else);}
+                                  $$.c = $3.c + "!" + if_else + "?" +  $5.c + (":" +  if_else) + $6.c;}
   | IF_T'('C')''{'CMDs'}'ELSE     {string if_else = gera_label("if_else");
-                                  $$.c = $3.c + "!" + if_else + "?" +  $6.c + (":" + if_else);}
+                                  $$.c = $3.c + "!" + if_else + "?" +  $6.c + (":" + if_else)+ $8.c;}
   | IF_T'('C')'CMD                {string if_end = gera_label("if_end");
                                   $$.c = $3.c + "!" + if_end + "?" +  $5.c + (":" + if_end);}
   | IF_T'('C')''{'CMDs'}'         {string if_end = gera_label("if_end");
@@ -193,6 +190,7 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | E '-' E             { $$.c = $1.c + $3.c + "-"; }
   | E '*' E             { $$.c = $1.c + $3.c + "*"; }
   | E '/' E             { $$.c = $1.c + $3.c + "/"; }
+  | E '%' E             { $$.c = $1.c + $3.c + "%"; }
   | '-'E                { vector<string> t1, t2;
                           t1.push_back("0");
                           t2.push_back("-");                          
@@ -200,11 +198,11 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | '('E')'             {$$.c = $2.c;}
   | NUM_T               { $$.c = $1.c; }
   | STRING_T            { $$.c = $1.c; }
-  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; insere_var($2.c);} 
-  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  insere_var($2.c);}
-  | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; checa_var($1.c);}
+  | DV_T LVALUE 	      {$$.c = $2.c + "&" + $2.c + "undefined" + "="; /*insere_var($2.c)*/;} 
+  | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  /*insere_var($2.c)*/;}
+  | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; /*checa_var($1.c);*/}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]";}
-  | LVALUE              { $$.c = $1.c + "@"; checa_var($1.c);}
+  | LVALUE              { $$.c = $1.c + "@"; /*checa_var($1.c);*/}
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
@@ -238,15 +236,15 @@ void elimina_vars_locais(){
 
 void insere_var(vector<string> var){
   if(escopo_local){
-    if(vars_global.find(var) != vars_global.end()){
-      cout << "Erro: a variável '"  << var.front() << "' local já foi declarada." << endl;
+    if(vars_local.find(var) != vars_local.end()){
+      cout << "Erro: a variável local '"  << var.front() << "' já foi declarada." << endl;
       exit(1);
     }else{
       vars_local.insert(var);
     }  
   }else{
     if(vars_global.find(var) != vars_global.end()){
-      cout << "Erro: a variável '"  << var.front() << "' global já foi declarada na linha " << to_string(vars_global.find(var)->second) << "." << endl;
+      cout << "Erro: linha " << to_string(cont_linha) << ": a variável global '"  << var.front() << "' já foi declarada na linha " << to_string(vars_global.find(var)->second) << "." << endl;
       exit(1);
     }else{
       vars_global.insert(pair<vector<string>,int>(var,cont_linha));
