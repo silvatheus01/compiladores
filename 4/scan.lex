@@ -49,6 +49,10 @@ DV      "let"
 
 {DV}        {return DV_T;}
 
+"asm{".*"}" { string lexema = trim( yytext + 3, "{}" ); 
+            yylval.c = tokeniza( lexema );
+            return ASM_T; }
+
 {RETURN}    {return RETURN_T;}
 
 {FUNCTION}  {return FUNCTION_T;}

@@ -45,6 +45,11 @@ int num_parametros = 0;
 bool escopo_local;
 void elimina_vars_locais();
 
+// Remove de lexema todos os caracteres contidos na string tokens
+string trim(const char * lexema, string tokens);
+
+vector<string> tokeniza(string lexema);
+
 
 int yylex();
 int yyparse();
@@ -52,7 +57,7 @@ void yyerror(const char *);
 
 %}
 
-%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T FUNCTION_T RETURN_T
+%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T FUNCTION_T RETURN_T ASM_T
 
 // Sentença inicial da gramática
 %start S
@@ -72,7 +77,8 @@ CMD: E V ';'         {$$.c = $1.c + "^" + $2.c;}
   | FOR                    
   | IF                    
   | WHILE
-  | DF                  
+  | DF
+  | E ASM_T ';'      { $$.c = $1.c + $2.c + "^"; }                    
   ;
 
 // Bloco de código
@@ -206,7 +212,7 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
-  | CF
+  | CF             
   ;
 
   
@@ -228,11 +234,35 @@ vector<string> operator+( vector<string> a, string b ) {
   return a;
 }
 
+string trim(const char * lexema, string tokens){
+  string temp = lexema;
+  for(int i = 0; i < strlen(lexema); i++)
+    for(int j = 0; j < tokens.size() ; j++){
+      if(lexema[i] == tokens[j])
+        temp[i] = ' ';
+    }
+  
+  return temp;
+}
+
+vector<string> tokeniza(string lexema){
+  vector<string> instrucoes;
+  string instrucao;
+  for (int i = 0; i < lexema.size(); i++)
+    if(lexema[i] != ' ')
+      instrucao += lexema[i];
+    else{
+      instrucoes.push_back(instrucao);
+      instrucao = "";
+    }
+
+  return instrucoes;
+}
+
 void elimina_vars_locais(){
   escopo_local = false;
   vars_local.clear();
 }
-
 
 void insere_var(vector<string> var){
   if(escopo_local){
