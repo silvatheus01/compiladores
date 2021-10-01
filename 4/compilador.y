@@ -67,7 +67,6 @@ void yyerror(const char *);
 %left '+' '-' 
 %left '*' '/' '%'
 
-
 %%
 S: CMDs { $$.c = $1.c + "." + funcoes; imprime(resolve_enderecos($$.c));}
   ;
@@ -97,16 +96,12 @@ DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
   ;
 
 // Chamar função
-CF: ID_T'('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "@" + "$"; 
-                  num_parametros = 0;
-                  }
-  | CFPROP
-  ;
-
-// Chamada de função através de uma propriedade
-CFPROP: ID_T '.' ID_T'('PC')' {$$.c = $5.c + to_string(num_parametros) + $1.c+ "@"+ $3.c + "[@]" +"$"; 
-                              num_parametros = 0;
-                              }
+CF: LVALUEPROP '('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "[@]"+ "$"; 
+                        num_parametros = 0;
+                        }
+  | LVALUE '('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "@"+ "$"; 
+                        num_parametros = 0;
+                        }
   ;
 
 // Parâmetros de função quando chamamos uma função 
@@ -139,9 +134,15 @@ AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
   ;
 
 
-LVALUEPROP: ID_T AP   {$$.c = $1.c + "@" + $2.c; /*checa_var($1.c);*/}
-  | ID_T '.' ID_T     {$$.c = $1.c + "@" + $3.c; /*checa_var($1.c);*/}
-  | ID_T '.' ID_T AP  {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; /*checa_var($1.c);*/}
+LVALUEPROP: ID_T AP       {$$.c = $1.c + "@" + $2.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T '.' PROP AP    {$$.c = $1.c + "@" + $3.c + "[@]" + $5.c + "[@]" + $6.c ; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T '.' PROP    {$$.c = $1.c + "@" + $3.c + "[@]" + $5.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T         {$$.c = $1.c + "@" + $3.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T AP      {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; /*checa_var($1.c);*/}
+  ;
+
+PROP: ID_T '.' PROP  {$$.c = $1.c + "[@]" + $3.c; }
+  |  ID_T        {$$.c = $1.c;}
   ;
 
 LVALUE: ID_T {$$.c = $1.c;}
@@ -219,7 +220,7 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
-  | CF           
+  | CF     
   ;
 
   
