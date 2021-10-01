@@ -100,6 +100,13 @@ DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
 CF: ID_T'('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "@" + "$"; 
                   num_parametros = 0;
                   }
+  | CFPROP
+  ;
+
+// Chamada de função através de uma propriedade
+CFPROP: ID_T '.' ID_T'('PC')' {$$.c = $5.c + to_string(num_parametros) + $1.c+ "@"+ $3.c + "[@]" +"$"; 
+                              num_parametros = 0;
+                              }
   ;
 
 // Parâmetros de função quando chamamos uma função 
@@ -212,7 +219,7 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
-  | CF             
+  | CF           
   ;
 
   
@@ -235,26 +242,34 @@ vector<string> operator+( vector<string> a, string b ) {
 }
 
 string trim(const char * lexema, string tokens){
-  string temp = lexema;
-  for(int i = 0; i < strlen(lexema); i++)
+  string temp;
+  bool flag = false;
+  for(int i = 0; i < strlen(lexema); i++){
     for(int j = 0; j < tokens.size() ; j++){
       if(lexema[i] == tokens[j])
-        temp[i] = ' ';
+        flag = true;
     }
-  
+    if(!flag){
+      temp = temp + lexema[i];
+    }
+    flag = false;
+  }
   return temp;
 }
 
 vector<string> tokeniza(string lexema){
   vector<string> instrucoes;
   string instrucao;
-  for (int i = 0; i < lexema.size(); i++)
+  for (int i = 0; i < lexema.size(); i++){
     if(lexema[i] != ' ')
       instrucao += lexema[i];
     else{
       instrucoes.push_back(instrucao);
       instrucao = "";
     }
+  }
+
+  instrucoes.push_back(instrucao);
 
   return instrucoes;
 }
