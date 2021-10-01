@@ -138,6 +138,18 @@ COBJ:  ID_T ':' E ',' COBJ {$$.c = $1.c + $3.c + "[<=]" + $5.c;}
 DEFA: '[' ']' {$$.c = novo + "[]";}
   ;
 
+// Declaração literal de arrays
+DLARRAY: '[' CDLARRAY ']' { pos_parametro = 0;
+                      vector<string> temp = novo + "[]";
+                      $$.c = temp + $2.c;
+                      pos_parametro = 0; }
+  ;
+
+// Campo da declaração literal de arrays
+CDLARRAY:  CDLARRAY ',' E   { $$.c = novo + to_string(pos_parametro++) + $3.c + "[<=]" + $1.c;}
+  | E                       {$$.c = novo + to_string(pos_parametro++) + $1.c + "[<=]";}
+  ;
+
 // Array preenchido
 AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
   | '[' E ']'         {$$.c = $2.c;}
@@ -232,6 +244,7 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | DEFA
   | CF
   | DLOBJ
+  | DLARRAY
   ;
 
   
