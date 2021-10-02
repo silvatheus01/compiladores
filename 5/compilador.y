@@ -156,15 +156,17 @@ AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
   ;
 
 
-LVALUEPROP: ID_T AP       {$$.c = $1.c + "@" + $2.c; /*checa_var($1.c);*/}
-  | ID_T '.' ID_T '.' PROP AP    {$$.c = $1.c + "@" + $3.c + "[@]" + $5.c + "[@]" + $6.c ; /*checa_var($1.c);*/}
-  | ID_T '.' ID_T '.' PROP    {$$.c = $1.c + "@" + $3.c + "[@]" + $5.c; /*checa_var($1.c);*/}
-  | ID_T '.' ID_T         {$$.c = $1.c + "@" + $3.c; /*checa_var($1.c);*/}
-  | ID_T '.' ID_T AP      {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; /*checa_var($1.c);*/}
+LVALUEPROP: ID_T AP                          {$$.c = $1.c + "@" + $2.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T '.' PROP                   {$$.c = $1.c + "@" + $3.c + "[@]" + $5.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T                            {$$.c = $1.c + "@" + $3.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T AP                         {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c; /*checa_var($1.c);*/}
+  | ID_T '.' ID_T AP '.' PROP                {$$.c = $1.c + "@" + $3.c  + "[@]" + $4.c + "[@]" + $6.c; /*checa_var($1.c);*/}
   ;
 
-PROP: ID_T '.' PROP  {$$.c = $1.c + "[@]" + $3.c; }
-  |  ID_T        {$$.c = $1.c;}
+PROP: ID_T AP '.' PROP  {$$.c = $1.c + "[@]" + $2.c + "[@]" + $4.c; }
+  | ID_T '.' PROP       {$$.c = $1.c + "[@]" + $3.c; }
+  | ID_T AP             {$$.c = $1.c + "[@]" + $2.c + "[@]";}
+  | ID_T                {$$.c = $1.c;}
   ;
 
 LVALUE: ID_T {$$.c = $1.c;}
