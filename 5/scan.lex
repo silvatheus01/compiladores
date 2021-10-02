@@ -40,9 +40,16 @@ DV      "let"
 
 BOOL    ("true"|"false")
 
+ARGS    "("{WS}*{ID}{WS}*(","{WS}*{ID}{WS}*)*")"{WS}*"=>"     
+
 %%
 
 {WS}  		{ }
+
+{ARGS}      { 
+            yylval.c = token(yytext);
+            return ABRE_PAR_SETA_T; 
+            } 
 
 {OR}		{ yylval.c = novo + yytext;
             return OR_T; }
@@ -53,6 +60,9 @@ BOOL    ("true"|"false")
 
 {BOOL}      { yylval.c = novo + yytext;
             return BOOL_T;}
+
+"=>"        {yylval.c = novo + yytext;
+            return SETA_T;}
 
 "asm{".*"}" { string lexema = trim( yytext + 3, "{}" ); 
             yylval.c = tokeniza( lexema );

@@ -45,11 +45,15 @@ int num_parametros = 0;
 bool escopo_local;
 void elimina_vars_locais();
 
-// Remove de lexema todos os caracteres contidos na string tokens
+/*Remove de lexema todos os caracteres contidos na string tokens
+e retorna uma string com esses caracteres removidos*/
 string trim(const char * lexema, string tokens);
 
+// Retorna um vector de strings com os tokens contidos em lexema
 vector<string> tokeniza(string lexema);
 
+// Retorna um vector com os comandos para se declarar argumentos em uma função anônima.
+vector<string> token(const char * lexema);
 
 int yylex();
 int yyparse();
@@ -58,15 +62,18 @@ void yyerror(const char *);
 %}
 
 %token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T 
-STRING_T FUNCTION_T RETURN_T ASM_T BOOL_T
+STRING_T FUNCTION_T RETURN_T ASM_T BOOL_T SETA_T ABRE_PAR_SETA_T
 
 // Sentença inicial da gramática
 %start S
 
 %right '=' 
 %nonassoc '>' '<' OR_T
+%nonassoc SETA_T
+%nonassoc ABRE_PAR_SETA_T
 %left '+' '-' 
 %left '*' '/' '%'
+
 
 %%
 S: CMDs { $$.c = $1.c + "." + funcoes; imprime(resolve_enderecos($$.c));}
@@ -103,6 +110,20 @@ FA: FUNCTION_T'('PD')''{'CMDs'}'        {//escopo_local = true;
                                         $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
                                         pos_parametro=0;
                                         //elimina_vars_locais(); 
+                                        }
+  | ABRE_PAR_SETA_T E                   {//escopo_local = true;
+                                        string cmds_function = gera_label("funcao");
+                                        funcoes = funcoes + (":" + cmds_function) + $1.c + $2.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
+                                        $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
+                                        //elimina_vars_locais();  
+                                        }
+  | ID_T SETA_T E                       {//escopo_local = true;
+                                        string cmds_function = gera_label("funcao");
+                                        funcoes = funcoes + (":" + cmds_function) + $1.c + "&" + $1.c + "arguments" + "@" + to_string(0) 
+                                        + "[@]" + "=" + "^" + $3.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
+                                        $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
+                                        pos_parametro=0;
+                                        //elimina_vars_locais();  
                                         }
   ;
 
@@ -234,6 +255,11 @@ FOR: FOR_T'('CMD C ';' E')''{' CMDs '}' {string for_end = gera_label("for_end");
                                           $$.c = $3.c + (":" + for_cond) + $4.c + "!" + for_end + "?" + $9.c  + $6.c + "^" + for_cond  + "#" + (":" + for_end);}
   ;
 
+FOR: FOR_T'('CMD C ';' E')' CMD {string for_end = gera_label("for_end");
+                                          string for_cond = gera_label("for_cond");
+                                          $$.c = $3.c + (":" + for_cond) + $4.c + "!" + for_end + "?" + $8.c  + $6.c + "^" + for_cond  + "#" + (":" + for_end);}
+  ;
+
 
 E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | E '-' E             { $$.c = $1.c + $3.c + "-"; }
@@ -279,6 +305,27 @@ vector<string> operator+( vector<string> a, vector<string> b ) {
 vector<string> operator+( vector<string> a, string b ) {
   a.push_back( b );
   return a;
+}
+
+vector<string> token(const char * lexema){
+
+  vector<string> tokens;
+  pos_parametro = 0;
+
+  string temp_str = trim(lexema, "(),");
+  // Esse teste é para se saber se o Analisador léxico capturou o token "=>" 
+  if(temp_str.find("=>") != string::npos){
+    temp_str.erase(temp_str.find("=>"),2);
+  }
+  
+  vector<string> temp_vect = tokeniza(temp_str);
+  for(int i = 0; i > temp_vect.size(), i++;){
+    tokens = tokens + temp_vect[i] + "&" + temp_vect[i] 
+    + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";
+  }
+
+  pos_parametro = 0;
+  return tokens;
 }
 
 string trim(const char * lexema, string tokens){
