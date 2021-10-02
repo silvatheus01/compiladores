@@ -57,7 +57,8 @@ void yyerror(const char *);
 
 %}
 
-%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T STRING_T FUNCTION_T RETURN_T ASM_T
+%token OR_T DV_T FOR_T WHILE_T IF_T ELSE_T ELSEIF_T NUM_T ID_T 
+STRING_T FUNCTION_T RETURN_T ASM_T BOOL_T
 
 // Sentença inicial da gramática
 %start S
@@ -92,6 +93,16 @@ DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
                                         $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";
                                         pos_parametro=0;
                                         //elimina_vars_locais();
+                                        }
+  ;
+
+// Função anônima
+FA: FUNCTION_T'('PD')''{'CMDs'}'        {//escopo_local = true;
+                                        string cmds_function = gera_label("funcao");
+                                        funcoes = funcoes + (":" + cmds_function) + $3.c + $6.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
+                                        $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
+                                        pos_parametro=0;
+                                        //elimina_vars_locais(); 
                                         }
   ;
 
@@ -247,6 +258,8 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | CF
   | DLOBJ
   | DLARRAY
+  | FA
+  | BOOL_T
   ;
 
   

@@ -38,6 +38,8 @@ OR      ({LT}|{LE}|{EQ}|{NE})
     /*Define uma variável*/
 DV      "let"
 
+BOOL    ("true"|"false")
+
 %%
 
 {WS}  		{ }
@@ -48,6 +50,9 @@ DV      "let"
 {PL}        {cont_linha++;}
 
 {DV}        {return DV_T;}
+
+{BOOL}      { yylval.c = novo + yytext;
+            return BOOL_T;}
 
 "asm{".*"}" { string lexema = trim( yytext + 3, "{}" ); 
             yylval.c = tokeniza( lexema );
