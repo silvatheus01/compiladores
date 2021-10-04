@@ -40,14 +40,14 @@ DV      "let"
 
 BOOL    ("true"|"false")
 
-ARGS    "("{WS}*{ID}{WS}*(","{WS}*{ID}{WS}*)*")"{WS}*"=>"     
+ARGS    {WS}*{ID}{WS}*(","{WS}*{ID}{WS}*)*")"{WS}*"=>"     
 
 %%
 
 {WS}  		{ }
-
-{ARGS}      { 
-            yylval.c = token(yytext);
+    /*Para evitar um conflito "reduce/reduce" com a regra "()" */
+"("/{ARGS}      { 
+            yylval.c = novo + yytext;
             return ABRE_PAR_SETA_T; 
             } 
 

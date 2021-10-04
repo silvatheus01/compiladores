@@ -17,7 +17,6 @@ struct Atributos {
 
 #define YYSTYPE Atributos
 
-
 map<vector<string>, int> vars_global;
 set<vector<string>> vars_local;
 int cont_linha = 1;
@@ -52,9 +51,6 @@ string trim(const char * lexema, string tokens);
 // Retorna um vector de strings com os tokens contidos em lexema
 vector<string> tokeniza(string lexema);
 
-// Retorna um vector com os comandos para se declarar argumentos em uma função anônima.
-vector<string> token(const char * lexema);
-
 int yylex();
 int yyparse();
 void yyerror(const char *);
@@ -67,12 +63,12 @@ STRING_T FUNCTION_T RETURN_T ASM_T BOOL_T SETA_T ABRE_PAR_SETA_T
 // Sentença inicial da gramática
 %start S
 
-%right '=' 
+%right '='
+%right  SETA_T
 %nonassoc '>' '<' OR_T
-%nonassoc SETA_T
-%nonassoc ABRE_PAR_SETA_T
 %left '+' '-' 
 %left '*' '/' '%'
+
 
 
 %%
@@ -98,31 +94,28 @@ DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
                                         string cmds_function = gera_label("funcao");
                                         funcoes = funcoes + (":" + cmds_function) + $4.c + $7.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";
-                                        pos_parametro=0;
                                         //elimina_vars_locais();
                                         }
   ;
 
 // Função anônima
-FA: FUNCTION_T'('PD')''{'CMDs'}'        {//escopo_local = true;
+FA: FUNCTION_T'('PD')''{'CMDs'}'        {                                       
                                         string cmds_function = gera_label("funcao");
                                         funcoes = funcoes + (":" + cmds_function) + $3.c + $6.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
-                                        pos_parametro=0;
                                         //elimina_vars_locais(); 
                                         }
-  | ABRE_PAR_SETA_T E                   {//escopo_local = true;
+  | ABRE_PAR_SETA_T PD ')' SETA_T E    {//escopo_local = true;
                                         string cmds_function = gera_label("funcao");
-                                        funcoes = funcoes + (":" + cmds_function) + $1.c + $2.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
+                                        funcoes = funcoes + (":" + cmds_function) + $2.c + $5.c + "'&retorno'" + "@" + "~" + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
                                         //elimina_vars_locais();  
                                         }
   | ID_T SETA_T E                       {//escopo_local = true;
                                         string cmds_function = gera_label("funcao");
                                         funcoes = funcoes + (":" + cmds_function) + $1.c + "&" + $1.c + "arguments" + "@" + to_string(0) 
-                                        + "[@]" + "=" + "^" + $3.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
+                                        + "[@]" + "=" + "^" + $3.c + "'&retorno'" + "@" + "~" + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = novo + "{}" + "'&funcao'" + cmds_function + "[<=]";
-                                        pos_parametro=0;
                                         //elimina_vars_locais();  
                                         }
   ;
@@ -143,13 +136,14 @@ PC: E         {num_parametros++; $$.c = $1.c;}
   ;
 
 // Parâmetros de função quando definimos uma função
-PD: ID_T        { /*insere_var($1.c);*/
-                $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";
+PD: PD ID_T ','    { /*insere_var($1.c);*/
+                      $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";  
+                      
                 }                             
-  | PD ',' ID_T {/*insere_var($1.c);*/               
-                $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";
+  | PD ID_T {/*insere_var($1.c);*/               
+                $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";             
                 }
-  |             {$$.c = novo;}
+  |           {$$.c = novo; pos_parametro = 0;  }
   ;
 
 // Definição de objeto vazio
@@ -171,16 +165,16 @@ DEFA: '[' ']' {$$.c = novo + "[]";}
   ;
 
 // Declaração literal de arrays
-DLARRAY: '[' CDLARRAY ']' { pos_parametro = 0;
-                      vector<string> temp = novo + "[]";
-                      $$.c = temp + $2.c;
-                      pos_parametro = 0; }
+DLARRAY: '[' CDLARRAY ']' { 
+                          $$.c = novo + "[]" + $2.c;
+                          
+                          }
   ;
 
 // Campo da declaração literal de arrays
-CDLARRAY:  CDLARRAY ',' E   { $$.c = novo + to_string(pos_parametro++) + $3.c + "[<=]" + $1.c;}
-  | E                       {$$.c = novo + to_string(pos_parametro++) + $1.c + "[<=]";}
-  ;
+CDLARRAY: CDLARRAY ',' E  { $$.c = $1.c + novo + to_string(++pos_parametro) + $3.c + "[<=]"; }
+  | E                 { $$.c = novo + to_string(0) + $1.c + "[<=]"; pos_parametro = 0;}
+  ; 
 
 // Array preenchido
 AP: '[' E ']'AP       {$$.c = $2.c + "[@]" + $4.c;}
@@ -277,7 +271,9 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  /*insere_var($2.c)*/;}
   | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; /*checa_var($1.c);*/}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]";}
-  | LVALUE              { $$.c = $1.c + "@"; /*checa_var($1.c);*/}
+  | LVALUE              { 
+                          $$.c = $1.c + "@"; 
+                          /*checa_var($1.c);*/}
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | DEFO
   | DEFA
@@ -305,27 +301,6 @@ vector<string> operator+( vector<string> a, vector<string> b ) {
 vector<string> operator+( vector<string> a, string b ) {
   a.push_back( b );
   return a;
-}
-
-vector<string> token(const char * lexema){
-
-  vector<string> tokens;
-  pos_parametro = 0;
-
-  string temp_str = trim(lexema, "(),");
-  // Esse teste é para se saber se o Analisador léxico capturou o token "=>" 
-  if(temp_str.find("=>") != string::npos){
-    temp_str.erase(temp_str.find("=>"),2);
-  }
-  
-  vector<string> temp_vect = tokeniza(temp_str);
-  for(int i = 0; i > temp_vect.size(), i++;){
-    tokens = tokens + temp_vect[i] + "&" + temp_vect[i] 
-    + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";
-  }
-
-  pos_parametro = 0;
-  return tokens;
 }
 
 string trim(const char * lexema, string tokens){
