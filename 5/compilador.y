@@ -157,7 +157,7 @@ CF: LVALUEPROP '('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "[@]"
                         }
   | LVALUE '('PC')'     { funcao_atual = $1.c;
                         if(funcoes_com_param_default.find($1.c) != funcoes_com_param_default.end()){ 
-                          $$.c = pop_parametro_default(num_parametros) + $3.c + to_string(pos_parametro_default+1) + $1.c + "@"+ "$"; 
+                          $$.c = $3.c + pop_parametro_default(num_parametros) +  to_string(pos_parametro_default+1) + $1.c + "@"+ "$"; 
                           
                         }
                         else{
