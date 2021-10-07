@@ -7,7 +7,7 @@
 #include <set>
 #include <vector>
 #include <stdbool.h>
-
+#include <tuple>
 using namespace std;
 
 struct Atributos {
@@ -50,10 +50,30 @@ string trim(const char * lexema, string tokens);
 
 // Retorna um vector de strings com os tokens contidos em lexema
 vector<string> tokeniza(string lexema);
+map<vector<string>,tuple<vector<vector<string>>,int>> valores_default;
+
+/*vector<string> pop_valores_default(vector<string> funcao, int num_argumentos);
+
+void push_valores_default(vector<string> funcao, vector<vector<string>> expressoes, int num_argumentos);*/
+
+int pos_parametro_default = -1;
+set<vector<string>> funcoes_com_param_default;
+bool funcao_com_param_default;
+
+vector<vector<string>> expressoes_args_funcao;
+vector<string> funcao_atual;
 
 int yylex();
 int yyparse();
 void yyerror(const char *);
+
+vector<string> pop_parametro_default(int posicao){
+  vector<string> temp;
+  for(int i = posicao; i < expressoes_args_funcao.size(); i++){
+    temp = temp + expressoes_args_funcao[i];
+  }
+  return temp;
+}
 
 %}
 
@@ -91,9 +111,20 @@ CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
 
 // Definir função 
 DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
+                                        //mapeia_valores_default($2.c, $4.c);
+                                
+                                        funcao_atual = $2.c;
                                         string cmds_function = gera_label("funcao");
                                         funcoes = funcoes + (":" + cmds_function) + $4.c + $7.c + "undefined" +  "@" + "'&retorno'" +  "@" + "~";
                                         $$.c = $2.c + "&" + $2.c + "{}" + "=" + "'&funcao'" + cmds_function + "[=]" + "^";
+                                        //push_valores_default($2.c, expressoes_args_funcao);
+                                        //expressoes_args_funcao = novo;
+                                        if(funcao_com_param_default){
+                                          funcoes_com_param_default.insert($2.c);
+                                          funcao_com_param_default = false;
+                                        }
+                                        
+                                        
                                         //elimina_vars_locais();
                                         }
   ;
@@ -124,26 +155,37 @@ FA: FUNCTION_T'('PD')''{'CMDs'}'        {
 CF: LVALUEPROP '('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "[@]"+ "$"; 
                         num_parametros = 0;
                         }
-  | LVALUE '('PC')'  {$$.c = $3.c + to_string(num_parametros) + $1.c + "@"+ "$"; 
+  | LVALUE '('PC')'     { funcao_atual = $1.c;
+                        if(funcoes_com_param_default.find($1.c) != funcoes_com_param_default.end()){ 
+                          $$.c = pop_parametro_default(num_parametros) + $3.c + to_string(pos_parametro_default+1) + $1.c + "@"+ "$"; 
+                          
+                        }
+                        else{
+                          $$.c = $3.c + to_string(num_parametros) + $1.c + "@"+ "$"; 
+                        }
+                        
                         num_parametros = 0;
                         }
   ;
 
 // Parâmetros de função quando chamamos uma função 
-PC: E         {num_parametros++; $$.c = $1.c;}
+PC: E         {num_parametros++;  $$.c = $1.c;}
   | E ',' PC  {num_parametros++; $$.c = $1.c + $3.c;}
   |           {$$.c = novo;}
   ;
 
 // Parâmetros de função quando definimos uma função
-PD: PD ID_T ','    { /*insere_var($1.c);*/
-                      $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";  
-                      
-                }                             
-  | PD ID_T {/*insere_var($1.c);*/               
-                $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";             
-                }
-  |           {$$.c = novo; pos_parametro = 0;  }
+PD: PD ID_T ',' {  /*insere_var($1.c);*/
+                    $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^";}                             
+  | PD ID_T '=' E ',' { funcao_com_param_default = true;                     
+                      $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]"  + "=" + "^";
+                      expressoes_args_funcao.push_back($4.c); pos_parametro_default++; }                  
+  | PD ID_T           {            
+                      $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]" + "=" + "^"; }
+  | PD ID_T '=' E    { funcao_com_param_default = true;  
+                      expressoes_args_funcao.push_back($4.c); pos_parametro_default++;     
+                      $$.c = $1.c + $2.c + "&" + $2.c + "arguments" + "@" + to_string(pos_parametro++) + "[@]"  + "=" + "^"; }
+  |                 {$$.c = novo; pos_parametro = 0;  }
   ;
 
 // Definição de objeto vazio
@@ -302,6 +344,28 @@ vector<string> operator+( vector<string> a, string b ) {
   a.push_back( b );
   return a;
 }
+
+/*void push_valores_default(vector<string> funcao, vector<vector<string>> expressoes, int num_argumentos){
+  valores_default.insert(
+    pair<vector<string>,tuple<vector<vector<string>>,int>>(funcao, make_tuple(expressoes, num_argumentos))
+  );  
+}
+
+vector<string> pop_valores_default(vector<string> funcao, int num_argumentos){
+  auto expressoes;
+  auto key = valores_default.find(funcao);
+  vector<string> temp;
+  if(key != valores_default.end()){
+    auto tupla = key->second;
+    expressoes = get<0>(tupla);
+    if(num_argumentos < get<1>(tupla)){
+      for(int i = num_argumentos-1; i < expressoes.length(); i++){
+        temp = temp + expressoes[i]
+      }
+    } 
+  }
+  return temp;
+}*/
 
 string trim(const char * lexema, string tokens){
   string temp;
