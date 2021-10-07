@@ -101,13 +101,15 @@ CMD: E V ';'         {$$.c = $1.c + "^" + $2.c;}
   | IF                    
   | WHILE
   | DF
-  | E ASM_T ';'      { $$.c = $1.c + $2.c + "^"; }                    
+  | E ASM_T ';'      { $$.c = $1.c + $2.c + "^"; }
+  | '{''}'            {$$.c = novo;}
   ;
 
 // Bloco de código
 CMDs: CMD CMDs  {$$.c = $1.c + $2.c;}
-  |             {$$.c = novo;}
+  | CMD           {$$.c = $1.c;}
   ;
+
 
 // Definir função 
 DF: FUNCTION_T ID_T'('PD')''{'CMDs'}'  { //escopo_local = true;
@@ -258,7 +260,8 @@ IF: IF_T'('C')'CMD ELSEIF         {string if_ou_elseif = gera_label("if_ou_elsei
   | IF_T'('C')''{'CMDs'}'ELSEIF   {string if_ou_elseif = gera_label("if_ou_elseif");
                                   $$.c = $3.c + "!" + if_ou_elseif + "?" +  $6.c + (":" + if_ou_elseif) + $8.c;}
   | IF_T'('C')'CMD ELSE           {string if_else = gera_label("if_else");
-                                  $$.c = $3.c + "!" + if_else + "?" +  $5.c + (":" +  if_else) + $6.c;}
+                                  string depois_if = gera_label("depois_if");
+                                  $$.c = $3.c + "!" + if_else + "?" +  $5.c + depois_if + "#" + (":" +  if_else) + $6.c + (":" +  depois_if);}
   | IF_T'('C')''{'CMDs'}'ELSE     {string if_else = gera_label("if_else");
                                   $$.c = $3.c + "!" + if_else + "?" +  $6.c + (":" + if_else)+ $8.c;}
   | IF_T'('C')'CMD                {string if_end = gera_label("if_end");
@@ -294,6 +297,7 @@ FOR: FOR_T'('CMD C ';' E')''{' CMDs '}' {string for_end = gera_label("for_end");
 FOR: FOR_T'('CMD C ';' E')' CMD {string for_end = gera_label("for_end");
                                           string for_cond = gera_label("for_cond");
                                           $$.c = $3.c + (":" + for_cond) + $4.c + "!" + for_end + "?" + $8.c  + $6.c + "^" + for_cond  + "#" + (":" + for_end);}
+
   ;
 
 
@@ -313,12 +317,12 @@ E: E '+' E              { $$.c = $1.c + $3.c + "+"; }
   | DV_T LVALUE '=' E 	{$$.c = $2.c + "&" + $2.c + $4.c + "=";  /*insere_var($2.c)*/;}
   | LVALUE '=' E 	      {$$.c = $1.c + $3.c + "="; /*checa_var($1.c);*/}
   | LVALUEPROP '=' E 	  {$$.c = $1.c + $3.c + "[=]";}
+  | DEFO
+  | DEFA
   | LVALUE              { 
                           $$.c = $1.c + "@"; 
                           /*checa_var($1.c);*/}
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
-  | DEFO
-  | DEFA
   | CF
   | DLOBJ
   | DLARRAY
