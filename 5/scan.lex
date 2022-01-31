@@ -40,11 +40,12 @@ DV      "let"
 
 BOOL    ("true"|"false")
 
-ARGS    {WS}*{ID}{WS}*(","{WS}*{ID}{WS}*)*")"{WS}*"=>"     
+ARGS    {WS}*{ID}{WS}*(","{WS}*{ID}{WS}*)*")"{WS}*"=>"  
 
 %%
 
 {WS}  		{ }
+
     /*Para evitar um conflito "reduce/reduce" com a regra "()" */
 "("/{ARGS}      { 
             yylval.c = novo + yytext;
